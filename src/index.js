@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import ReactDOM from "react-dom";
-import { PRODUCTS, sortProductByCategory } from "./utils";
+import PRODUCTS from "./products";
+import { sortProductByCategory } from "./utils";
 
 const ProductRow = ({ product }) => {
-  const name = product.stocked ? (
+  const productName = product.stocked ? (
     product.name
   ) : (
     <span style={{ color: "red" }}>{product.name}</span>
@@ -11,7 +12,7 @@ const ProductRow = ({ product }) => {
 
   return (
     <tr>
-      <td>{name}</td>
+      <td>{productName}</td>
       <td>{product.price}</td>
     </tr>
   );
@@ -25,24 +26,31 @@ const ProductCategoryRow = ({ category }) => {
   );
 };
 
-const ProductTable = ({ products }) => {
+const ProductTable = ({ products, filterText, inStock }) => {
   const productRows = [];
   let lastCategory = null;
 
-  products.sort(sortProductByCategory).forEach(product => {
-    if (product.category !== lastCategory) {
-      productRows.push(
-        <ProductCategoryRow
-          key={product.category}
-          category={product.category}
-        />
-      );
-    }
+  products
+    .filter(
+      product =>
+        product.name.toLowerCase().includes(filterText.toLowerCase()) &&
+        (!inStock ? true : product.stocked)
+    )
+    .sort(sortProductByCategory)
+    .forEach(product => {
+      if (product.category !== lastCategory) {
+        productRows.push(
+          <ProductCategoryRow
+            key={product.category}
+            category={product.category}
+          />
+        );
+      }
 
-    productRows.push(<ProductRow key={product.name} product={product} />);
+      productRows.push(<ProductRow key={product.name} product={product} />);
 
-    lastCategory = product.category;
-  });
+      lastCategory = product.category;
+    });
 
   return (
     <table>
@@ -57,22 +65,57 @@ const ProductTable = ({ products }) => {
   );
 };
 
-const SearchBar = () => {
+const SearchBar = ({ filterText, inStock, onInputChange }) => {
   return (
     <form>
-      <input type="text" placeholder="Search..." />
+      <input
+        type="text"
+        value={filterText}
+        name="filterText"
+        onChange={onInputChange}
+        placeholder="Search..."
+      />
       <p>
-        <input type="checkbox" /> &nbsp; Only show products in stock
+        <input
+          type="checkbox"
+          checked={inStock}
+          name="inStock"
+          onChange={onInputChange}
+        />{" "}
+        Only show products in stock
       </p>
     </form>
   );
 };
 
 const FilterableProductTable = ({ products }) => {
+  const [state, setState] = useState({
+    filterText: "",
+    inStock: false,
+  });
+
+  const handleInputChange = event => {
+    const target = event.target;
+    const name = target.name;
+    const value = name === "filterText" ? target.value : target.checked;
+    setState({
+      ...state,
+      [name]: value,
+    });
+  };
+
   return (
     <>
-      <SearchBar />
-      <ProductTable products={products} />
+      <SearchBar
+        filterText={state.filterText}
+        inStock={state.inStock}
+        onInputChange={handleInputChange}
+      />
+      <ProductTable
+        products={products}
+        filterText={state.filterText}
+        inStock={state.inStock}
+      />
     </>
   );
 };
